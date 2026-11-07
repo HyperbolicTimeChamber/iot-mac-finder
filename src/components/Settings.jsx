@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { DEFAULT_SETTINGS } from '../lib/storage.js'
+import { ewelinkAccount, hasEwelink, hasTplink, signInEwelink, signInTplink } from '../api/accounts.js'
 
 const REGIONS = [
   ['as', 'Asia (as)'],
@@ -18,6 +19,53 @@ function Field({ id, label, hint, ...props }) {
   )
 }
 
+function PasswordField({ id, label, hint, ...props }) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div className="field">
+      <label className="lbl" htmlFor={id}>{label}</label>
+      <div className="pw">
+        <input id={id} type={visible ? 'text' : 'password'} spellCheck="false" autoCapitalize="off" {...props} />
+        <button
+          type="button"
+          className="pw-toggle"
+          onClick={() => setVisible(!visible)}
+          aria-controls={id}
+          aria-pressed={visible}
+          aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+        >
+          {visible ? 'Hide' : 'Show'}
+        </button>
+      </div>
+      {hint && <div className="hint">{hint}</div>}
+    </div>
+  )
+}
+
+// Signs in to one account on demand and reports the result inline
+function Reauth({ label, ready, missing, run }) {
+  const [state, setState] = useState({ status: 'idle' })
+  async function go() {
+    setState({ status: 'busy' })
+    try {
+      const devices = await run()
+      setState({ status: 'ok', text: `Signed in. ${devices.length} device${devices.length === 1 ? '' : 's'} found.` })
+    } catch (err) {
+      setState({ status: 'error', text: err.message || String(err) })
+    }
+  }
+  return (
+    <div className="reauth">
+      <button type="button" className="btn" onClick={go} disabled={!ready || state.status === 'busy'}>
+        {state.status === 'busy' ? 'Signing in…' : `Reauthenticate ${label}`}
+      </button>
+      <span className={`reauth-msg ${state.status}`} role="status">
+        {!ready ? missing : state.text}
+      </span>
+    </div>
+  )
+}
+
 export default function Settings({ initial, onSave, onCancel, onForget }) {
   const [s, setS] = useState(initial || DEFAULT_SETTINGS)
   const [problem, setProblem] = useState('')
@@ -25,17 +73,14 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
 
   function submit(e) {
     e.preventDefault()
-    const account = s.sameEmail ? s.tplinkEmail : s.ewelinkAccount
-    const hasTplink = s.tplinkEmail && s.tplinkPassword
-    const hasEwelink = account && s.ewelinkPassword
     if (s.sameEmail && s.ewelinkPassword && !s.tplinkEmail) return setProblem('Enter your email under TP-Link ID, or untick "Same email".')
-    if (!hasTplink && !hasEwelink) return setProblem('Fill in at least one account: TP-Link or eWeLink.')
-    if (hasEwelink && !s.relayUrl) return setProblem('eWeLink needs the relay URL. Find it under Advanced.')
+    if (!hasTplink(s) && !hasEwelink(s)) return setProblem('Fill in at least one account: TP-Link or eWeLink.')
+    if (hasEwelink(s) && !s.relayUrl) return setProblem('eWeLink needs the relay URL. Find it under Advanced.')
     if (Boolean(s.ewelinkAppId) !== Boolean(s.ewelinkAppSecret)) {
       return setProblem('Fill in both App ID and App Secret under Advanced, or leave both empty.')
     }
     setProblem('')
-    onSave({ ...s, ewelinkAccount: account.trim(), tplinkEmail: s.tplinkEmail.trim(), relayUrl: s.relayUrl.trim() })
+    onSave({ ...s, ewelinkAccount: ewelinkAccount(s), tplinkEmail: s.tplinkEmail.trim(), relayUrl: s.relayUrl.trim() })
   }
 
   return (
@@ -50,7 +95,8 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
           <legend>TP-Link ID</legend>
           <p className="hint">The account you use in Tether. Lists your routers, extenders and Tapo devices.</p>
           <Field id="tplinkEmail" label="Email" type="email" autoComplete="username" value={s.tplinkEmail} onChange={set('tplinkEmail')} />
-          <Field id="tplinkPassword" label="Password" type="password" autoComplete="current-password" value={s.tplinkPassword} onChange={set('tplinkPassword')} />
+          <PasswordField id="tplinkPassword" label="Password" autoComplete="current-password" value={s.tplinkPassword} onChange={set('tplinkPassword')} />
+          <Reauth label="TP-Link" ready={hasTplink(s)} missing="Enter email and password to test." run={() => signInTplink(s)} />
         </fieldset>
 
         <fieldset>
@@ -66,7 +112,8 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
                 <div className="linked mono">{s.tplinkEmail || 'Enter your email in TP-Link ID above'}</div>
               </div>
             : <Field id="ewelinkAccount" label="Email or phone" value={s.ewelinkAccount} onChange={set('ewelinkAccount')} hint="Phone numbers include the country code, e.g. +919800000000." />}
-          <Field id="ewelinkPassword" label="Password" type="password" autoComplete="off" value={s.ewelinkPassword} onChange={set('ewelinkPassword')} />
+          <PasswordField id="ewelinkPassword" label="Password" autoComplete="off" value={s.ewelinkPassword} onChange={set('ewelinkPassword')} />
+          <Reauth label="eWeLink" ready={hasEwelink(s) && Boolean(s.relayUrl)} missing="Enter email and password to test." run={() => signInEwelink(s)} />
         </fieldset>
 
         <details className="advanced">
@@ -85,7 +132,7 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
           <Field id="relayUrl" label="eWeLink relay URL" type="url" placeholder="https://ewelink-relay.<you>.workers.dev" value={s.relayUrl} onChange={set('relayUrl')} hint="eWeLink blocks browser requests, so they go through a Cloudflare Worker (see the README)." />
           <div className="row2">
             <Field id="ewelinkAppId" label="eWeLink App ID" autoComplete="off" placeholder="Relay's own" value={s.ewelinkAppId} onChange={set('ewelinkAppId')} />
-            <Field id="ewelinkAppSecret" label="eWeLink App Secret" type="password" autoComplete="off" placeholder="Relay's own" value={s.ewelinkAppSecret} onChange={set('ewelinkAppSecret')} />
+            <PasswordField id="ewelinkAppSecret" label="eWeLink App Secret" autoComplete="off" placeholder="Relay's own" value={s.ewelinkAppSecret} onChange={set('ewelinkAppSecret')} />
           </div>
           <div className="hint">Leave both empty to use the relay's app credentials.</div>
         </details>

@@ -113,3 +113,15 @@ footer { font-size: 0.8rem; color: var(--muted); }
 .advanced > * + * { margin-top: 12px; }
 .advanced > summary + * { margin-top: 0; }
 .linked { border: 1.5px dashed var(--line); border-radius: 10px; padding: 10px 12px; color: var(--muted); font-size: 0.92rem; overflow-wrap: anywhere; }
+.pw { position: relative; }
+.pw input { padding-right: 68px; }
+.pw-toggle {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  font: inherit; font-size: 0.78rem; font-weight: 600; color: var(--accent);
+  background: transparent; border: 0; border-radius: 6px; padding: 6px 10px; cursor: pointer;
+}
+.pw-toggle:hover { background: var(--accent-soft); }
+.reauth { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.reauth-msg { font-size: 0.85rem; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.reauth-msg.ok { color: var(--ok); font-weight: 600; }
+.reauth-msg.error { color: var(--off); }

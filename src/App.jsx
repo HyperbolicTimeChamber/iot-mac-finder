@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Settings from './components/Settings.jsx'
 import Dashboard from './components/Dashboard.jsx'
-import { fetchTplink } from './api/tplink.js'
-import { fetchEwelink } from './api/ewelink.js'
+import { hasEwelink, hasTplink, signInEwelink, signInTplink } from './api/accounts.js'
 import { apLabel } from './lib/mac.js'
 import { clearSettings, loadSettings, saveSettings } from './lib/storage.js'
 
@@ -42,20 +41,8 @@ function Main() {
   const load = useCallback(async s => {
     setLoading(true)
     const jobs = []
-    if (s.tplinkEmail && s.tplinkPassword) {
-      jobs.push(['TP-Link', fetchTplink({ email: s.tplinkEmail, password: s.tplinkPassword })])
-    }
-    if (s.ewelinkAccount && s.ewelinkPassword) {
-      jobs.push(['eWeLink', fetchEwelink({
-        account: s.ewelinkAccount,
-        password: s.ewelinkPassword,
-        countryCode: s.ewelinkCountryCode,
-        region: s.ewelinkRegion,
-        appId: s.ewelinkAppId,
-        appSecret: s.ewelinkAppSecret,
-        relayUrl: s.relayUrl,
-      })])
-    }
+    if (hasTplink(s)) jobs.push(['TP-Link', signInTplink(s)])
+    if (hasEwelink(s)) jobs.push(['eWeLink', signInEwelink(s)])
     const results = await Promise.allSettled(jobs.map(([, p]) => p))
     const all = []
     const errs = {}
