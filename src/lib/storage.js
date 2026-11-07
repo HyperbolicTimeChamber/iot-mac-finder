@@ -12,7 +12,7 @@ export const DEFAULT_SETTINGS = {
   ewelinkRegion: 'as',
   ewelinkAppId: '',
   ewelinkAppSecret: '',
-  relayUrl: '',
+  relayUrl: 'https://ewelink-relay.hyperbolictimechamber.workers.dev',
   remember: false,
 }
 

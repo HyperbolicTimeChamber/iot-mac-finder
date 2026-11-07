@@ -24,7 +24,7 @@ npx wrangler login     # once, opens Cloudflare in the browser
 npx wrangler deploy    # prints https://ewelink-relay.<you>.workers.dev
 ```
 
-Paste that URL into **Relay URL** in Settings. To allow another origin, edit `ALLOWED_ORIGINS` in
+Paste that URL into **Relay URL** in Settings. The deployed relay for this site is https://ewelink-relay.hyperbolictimechamber.workers.dev and is pre-filled. To allow another origin, edit `ALLOWED_ORIGINS` in
 `worker/wrangler.toml` and deploy again.
 
 ## eWeLink App ID / Secret
