@@ -1,0 +1,6 @@
+name = "ewelink-relay"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://hyperbolictimechamber.github.io,http://localhost:5173"
