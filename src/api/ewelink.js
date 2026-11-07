@@ -22,7 +22,8 @@ export async function fetchEwelink(cfg) {
     try {
       res = await fetch(`${relay}/${host}${path}${qs}`, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-CK-Appid': cfg.appId, 'X-CK-Nonce': nonce(), ...headers },
+        // App ID is optional here: the relay fills in its own when it's absent
+        headers: { 'Content-Type': 'application/json', ...(cfg.appId && { 'X-CK-Appid': cfg.appId }), 'X-CK-Nonce': nonce(), ...headers },
         body,
       })
     } catch {
@@ -36,9 +37,10 @@ export async function fetchEwelink(cfg) {
     if (cfg.account.includes('@')) body.email = cfg.account
     else body.phoneNumber = cfg.account
     const payload = JSON.stringify(body)
+    // Without a custom app secret the relay signs the login itself
     const json = await request('/v2/user/login', {
       method: 'POST',
-      headers: { Authorization: `Sign ${await sign(cfg.appSecret, payload)}` },
+      headers: cfg.appId && cfg.appSecret ? { Authorization: `Sign ${await sign(cfg.appSecret, payload)}` } : {},
       body: payload,
     })
     // Account lives in another region: retry there once

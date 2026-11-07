@@ -7,6 +7,12 @@
 const API_HOSTS = new Set(['as-apia.coolkit.cc', 'eu-apia.coolkit.cc', 'us-apia.coolkit.cc', 'cn-apia.coolkit.cn'])
 const FORWARD_HEADERS = ['authorization', 'content-type', 'x-ck-appid', 'x-ck-nonce']
 
+async function sign(secret, payload) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))
+  return btoa(String.fromCharCode(...new Uint8Array(sig)))
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || ''
@@ -33,10 +39,19 @@ export default {
       const v = request.headers.get(h)
       if (v) headers.set(h, v)
     }
+    const body = request.method === 'GET' ? undefined : await request.text()
+
+    // Fill in the app credentials (worker secrets APP_ID / APP_SECRET) when
+    // the browser didn't send its own, so users only need email + password.
+    if (!headers.has('x-ck-appid') && env.APP_ID) headers.set('x-ck-appid', env.APP_ID)
+    if (rest.join('/') === 'v2/user/login' && !headers.has('authorization') && env.APP_SECRET) {
+      headers.set('authorization', `Sign ${await sign(env.APP_SECRET, body || '')}`)
+    }
+
     const upstream = await fetch(`https://${host}/${rest.join('/')}${url.search}`, {
       method: request.method,
       headers,
-      body: request.method === 'GET' ? undefined : await request.text(),
+      body,
     })
 
     return new Response(upstream.body, {

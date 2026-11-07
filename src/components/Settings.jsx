@@ -28,8 +28,9 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
     const hasTplink = s.tplinkEmail && s.tplinkPassword
     const hasEwelink = s.ewelinkAccount && s.ewelinkPassword
     if (!hasTplink && !hasEwelink) return setProblem('Fill in at least one account: TP-Link or eWeLink.')
-    if (hasEwelink && (!s.relayUrl || !s.ewelinkAppId || !s.ewelinkAppSecret)) {
-      return setProblem('eWeLink also needs the relay URL, App ID and App Secret.')
+    if (hasEwelink && !s.relayUrl) return setProblem('eWeLink needs the relay URL. Find it under Advanced.')
+    if (Boolean(s.ewelinkAppId) !== Boolean(s.ewelinkAppSecret)) {
+      return setProblem('Fill in both App ID and App Secret under Advanced, or leave both empty.')
     }
     setProblem('')
     onSave({ ...s, ewelinkAccount: s.ewelinkAccount.trim(), tplinkEmail: s.tplinkEmail.trim(), relayUrl: s.relayUrl.trim() })
@@ -55,6 +56,11 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
           <p className="hint">Lists your Sonoff devices with their MAC addresses.</p>
           <Field id="ewelinkAccount" label="Email or phone" value={s.ewelinkAccount} onChange={set('ewelinkAccount')} hint="Phone numbers include the country code, e.g. +919800000000." />
           <Field id="ewelinkPassword" label="Password" type="password" autoComplete="off" value={s.ewelinkPassword} onChange={set('ewelinkPassword')} />
+        </fieldset>
+
+        <details className="advanced">
+          <summary>Advanced</summary>
+          <p className="hint">You don't need to change these. The defaults work for accounts in India.</p>
           <div className="row2">
             <Field id="ewelinkCountryCode" label="Country code" value={s.ewelinkCountryCode} onChange={set('ewelinkCountryCode')} />
             <div className="field">
@@ -65,12 +71,13 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
               <div className="hint">Corrected automatically on sign-in.</div>
             </div>
           </div>
-          <Field id="relayUrl" label="Relay URL" type="url" placeholder="https://ewelink-relay.<you>.workers.dev" value={s.relayUrl} onChange={set('relayUrl')} hint="eWeLink blocks browser requests, so they go through your own Cloudflare Worker (see the README)." />
+          <Field id="relayUrl" label="eWeLink relay URL" type="url" placeholder="https://ewelink-relay.<you>.workers.dev" value={s.relayUrl} onChange={set('relayUrl')} hint="eWeLink blocks browser requests, so they go through a Cloudflare Worker (see the README)." />
           <div className="row2">
-            <Field id="ewelinkAppId" label="App ID" autoComplete="off" value={s.ewelinkAppId} onChange={set('ewelinkAppId')} />
-            <Field id="ewelinkAppSecret" label="App Secret" type="password" autoComplete="off" value={s.ewelinkAppSecret} onChange={set('ewelinkAppSecret')} />
+            <Field id="ewelinkAppId" label="eWeLink App ID" autoComplete="off" placeholder="Relay's own" value={s.ewelinkAppId} onChange={set('ewelinkAppId')} />
+            <Field id="ewelinkAppSecret" label="eWeLink App Secret" type="password" autoComplete="off" placeholder="Relay's own" value={s.ewelinkAppSecret} onChange={set('ewelinkAppSecret')} />
           </div>
-        </fieldset>
+          <div className="hint">Leave both empty to use the relay's app credentials.</div>
+        </details>
 
         <label className="check">
           <input id="remember" type="checkbox" checked={s.remember} onChange={set('remember')} />

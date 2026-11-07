@@ -29,8 +29,17 @@ Paste that URL into **Relay URL** in Settings. The deployed relay for this site 
 
 ## eWeLink App ID / Secret
 
-eWeLink sign-in needs an app ID and secret. Create your own at https://dev.ewelink.cc, or reuse the
-pair your existing eWeLink integration is configured with.
+eWeLink sign-in has to be signed with an app ID and secret. The relay holds them as Cloudflare
+secrets and signs the login itself, so the form only asks for email and password:
+
+```sh
+cd worker
+npx wrangler secret put APP_ID
+npx wrangler secret put APP_SECRET
+```
+
+Use your own pair from https://dev.ewelink.cc, or the public pair from homebridge-ewelink. To use a
+different pair for one browser only, fill both fields under Settings → Advanced.
 
 ## What it can't do
 

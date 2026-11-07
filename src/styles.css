@@ -103,3 +103,5 @@ td.found { color: var(--ok); font-weight: 600; }
 td.unk { color: var(--warn); }
 .copy { font: inherit; font-size: 0.78rem; border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 6px; padding: 1px 8px; cursor: pointer; }
 footer { font-size: 0.8rem; color: var(--muted); }
+.advanced > * + * { margin-top: 12px; }
+.advanced > summary + * { margin-top: 0; }
