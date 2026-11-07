@@ -125,3 +125,29 @@ footer { font-size: 0.8rem; color: var(--muted); }
 .reauth-msg { font-size: 0.85rem; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
 .reauth-msg.ok { color: var(--ok); font-weight: 600; }
 .reauth-msg.error { color: var(--off); }
+
+/* List loader: indeterminate bar on top, skeleton rows on first load, dimmed rows on refresh */
+.list { position: relative; }
+.loadbar { position: absolute; inset: 0 0 auto; height: 3px; overflow: hidden; z-index: 1; }
+.loadbar::before {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 35%;
+  background: var(--accent); border-radius: 999px;
+  animation: loadbar 1.1s ease-in-out infinite;
+}
+@keyframes loadbar { from { left: -35%; } to { left: 100%; } }
+.list.refreshing .row { opacity: 0.55; transition: opacity 0.2s ease; }
+.skeleton { pointer-events: none; }
+.sk { display: block; border-radius: 6px; background: var(--line); animation: sk-pulse 1.4s ease-in-out infinite; }
+.sk-box { grid-row: 1 / span 2; width: 20px; height: 20px; margin-top: 2px; }
+.sk-name { height: 16px; align-self: center; }
+.sk-pill { width: 48px; height: 12px; align-self: start; margin-top: 3px; }
+.skeleton .meta { gap: 8px 14px; margin-top: 4px; }
+.sk-mac { width: 150px; height: 14px; }
+.sk-text { width: 110px; height: 12px; }
+.sk-text.short { width: 70px; }
+@keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) {
+  .loadbar::before { animation: none; left: 0; width: 100%; opacity: 0.6; }
+  .sk { animation: none; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

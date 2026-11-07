@@ -138,8 +138,25 @@ export default function Dashboard({ devices, errors, loading, loadedAt, onRefres
         <div className="bar"><span style={{ width: devices.length ? `${(finished / devices.length) * 100}%` : 0 }} /></div>
       </section>
 
-      <div className="list" aria-live="polite" aria-busy={loading}>
-        {loading && !devices.length && <div className="empty">Signing in and loading your devices…</div>}
+      <div className={`list${loading && devices.length ? ' refreshing' : ''}`} aria-live="polite" aria-busy={loading}>
+        {loading && <div className="loadbar" role="progressbar" aria-label="Loading devices" />}
+        {loading && !devices.length && (
+          <>
+            <div className="sr-only">Signing in and loading your devices…</div>
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="row skeleton" aria-hidden="true">
+                <span className="sk sk-box" />
+                <span className="sk sk-name" style={{ width: `${30 + ((i * 17) % 25)}%` }} />
+                <span className="sk sk-pill" />
+                <div className="meta">
+                  <span className="sk sk-mac" />
+                  <span className="sk sk-text" />
+                  <span className="sk sk-text short" />
+                </div>
+              </div>
+            ))}
+          </>
+        )}
         {!loading && !devices.length && <div className="empty">No devices loaded. Check the errors above or your details in Settings.</div>}
         {devices.length > 0 && !rows.length && <div className="empty">No device in your accounts matches “{raw}”.</div>}
         {rows.map(d => (
