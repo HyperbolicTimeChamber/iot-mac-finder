@@ -6,7 +6,32 @@ import { fetchEwelink } from './api/ewelink.js'
 import { apLabel } from './lib/mac.js'
 import { clearSettings, loadSettings, saveSettings } from './lib/storage.js'
 
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('mac-finder-theme') || 'dark' } catch { return 'dark' }
+  })
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try { localStorage.setItem('mac-finder-theme', theme) } catch {}
+  }, [theme])
+  const next = theme === 'dark' ? 'light' : 'dark'
+  return (
+    <button type="button" className="theme-toggle" onClick={() => setTheme(next)} aria-label={`Switch to ${next} theme`}>
+      {next === 'light' ? 'Light' : 'Dark'}
+    </button>
+  )
+}
+
 export default function App() {
+  return (
+    <>
+      <ThemeToggle />
+      <Main />
+    </>
+  )
+}
+
+function Main() {
   const [settings, setSettings] = useState(loadSettings)
   const [editing, setEditing] = useState(() => !loadSettings())
   const [devices, setDevices] = useState([])
