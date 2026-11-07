@@ -24,11 +24,23 @@ const parse = s => {
   try { return JSON.parse(s || '{}') } catch { return {} }
 }
 
+// Govee rejects sign-ins from app versions it considers too old
+const APP_VERSION = '7.2.10'
+
+const appHeaders = client => ({
+  'Content-Type': 'application/json',
+  appVersion: APP_VERSION,
+  clientId: client,
+  clientType: '1',
+  iotVersion: '0',
+  timestamp: String(Date.now()),
+})
+
 export async function fetchGovee({ email, password }) {
   const client = clientId()
   const login = await fetch(`${BASE}/account/rest/account/v1/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: appHeaders(client),
     body: JSON.stringify({ email, password, client }),
   }).then(r => r.json())
   const token = login.client?.token
@@ -36,15 +48,7 @@ export async function fetchGovee({ email, password }) {
 
   const list = await fetch(`${BASE}/device/rest/devices/v1/list`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      appVersion: '5.6.01',
-      clientId: client,
-      clientType: '1',
-      iotVersion: '0',
-      timestamp: String(Date.now()),
-    },
+    headers: { ...appHeaders(client), Authorization: `Bearer ${token}` },
     body: '{}',
   }).then(r => r.json())
   if (!Array.isArray(list.devices)) throw new Error(`Govee device list failed: ${list.message || 'unknown error'} [${list.status}]`)
