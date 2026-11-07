@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS = {
   tplinkEmail: '',
   tplinkPassword: '',
   ewelinkAccount: '',
+  sameEmail: true,
   ewelinkPassword: '',
   ewelinkCountryCode: '+91',
   ewelinkRegion: 'as',
@@ -20,7 +21,12 @@ export function loadSettings() {
   for (const store of [sessionStorage, localStorage]) {
     try {
       const raw = store.getItem(SETTINGS)
-      if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+      if (raw) {
+        const saved = JSON.parse(raw)
+        // Settings saved before "same email" existed: tick it only if the emails already matched
+        if (!('sameEmail' in saved)) saved.sameEmail = !saved.ewelinkAccount || saved.ewelinkAccount === saved.tplinkEmail
+        return { ...DEFAULT_SETTINGS, ...saved }
+      }
     } catch {}
   }
   return null

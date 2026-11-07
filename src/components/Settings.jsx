@@ -25,15 +25,17 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
 
   function submit(e) {
     e.preventDefault()
+    const account = s.sameEmail ? s.tplinkEmail : s.ewelinkAccount
     const hasTplink = s.tplinkEmail && s.tplinkPassword
-    const hasEwelink = s.ewelinkAccount && s.ewelinkPassword
+    const hasEwelink = account && s.ewelinkPassword
+    if (s.sameEmail && s.ewelinkPassword && !s.tplinkEmail) return setProblem('Enter your email under TP-Link ID, or untick "Same email".')
     if (!hasTplink && !hasEwelink) return setProblem('Fill in at least one account: TP-Link or eWeLink.')
     if (hasEwelink && !s.relayUrl) return setProblem('eWeLink needs the relay URL. Find it under Advanced.')
     if (Boolean(s.ewelinkAppId) !== Boolean(s.ewelinkAppSecret)) {
       return setProblem('Fill in both App ID and App Secret under Advanced, or leave both empty.')
     }
     setProblem('')
-    onSave({ ...s, ewelinkAccount: s.ewelinkAccount.trim(), tplinkEmail: s.tplinkEmail.trim(), relayUrl: s.relayUrl.trim() })
+    onSave({ ...s, ewelinkAccount: account.trim(), tplinkEmail: s.tplinkEmail.trim(), relayUrl: s.relayUrl.trim() })
   }
 
   return (
@@ -54,7 +56,16 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
         <fieldset>
           <legend>eWeLink</legend>
           <p className="hint">Lists your Sonoff devices with their MAC addresses.</p>
-          <Field id="ewelinkAccount" label="Email or phone" value={s.ewelinkAccount} onChange={set('ewelinkAccount')} hint="Phone numbers include the country code, e.g. +919800000000." />
+          <label className="check">
+            <input id="sameEmail" type="checkbox" checked={s.sameEmail} onChange={set('sameEmail')} />
+            <span>Same email as my TP-Link ID</span>
+          </label>
+          {s.sameEmail
+            ? <div className="field">
+                <span className="lbl">Email</span>
+                <div className="linked mono">{s.tplinkEmail || 'Enter your email in TP-Link ID above'}</div>
+              </div>
+            : <Field id="ewelinkAccount" label="Email or phone" value={s.ewelinkAccount} onChange={set('ewelinkAccount')} hint="Phone numbers include the country code, e.g. +919800000000." />}
           <Field id="ewelinkPassword" label="Password" type="password" autoComplete="off" value={s.ewelinkPassword} onChange={set('ewelinkPassword')} />
         </fieldset>
 
