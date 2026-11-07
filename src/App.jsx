@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import Settings from './components/Settings.jsx'
 import Dashboard from './components/Dashboard.jsx'
-import { hasEwelink, hasTplink, signInEwelink, signInTplink } from './api/accounts.js'
+import { hasEwelink, hasGovee, hasTplink, signInEwelink, signInGovee, signInTplink } from './api/accounts.js'
 import { apLabel } from './lib/mac.js'
-import { clearSettings, loadSettings, saveSettings } from './lib/storage.js'
+import { clearSettings, loadManual, loadSettings, saveManual, saveSettings } from './lib/storage.js'
+
+const SOURCE_ORDER = ['eWeLink', 'Govee', 'Manual', 'TP-Link']
 
 function ThemeToggle() {
   const [theme, setTheme] = useState(() => {
@@ -37,12 +39,18 @@ function Main() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [loadedAt, setLoadedAt] = useState(null)
+  const [manual, setManual] = useState(loadManual)
+  const updateManual = list => {
+    setManual(list)
+    saveManual(list)
+  }
 
   const load = useCallback(async s => {
     setLoading(true)
     const jobs = []
     if (hasTplink(s)) jobs.push(['TP-Link', signInTplink(s)])
     if (hasEwelink(s)) jobs.push(['eWeLink', signInEwelink(s)])
+    if (hasGovee(s)) jobs.push(['Govee', signInGovee(s)])
     const results = await Promise.allSettled(jobs.map(([, p]) => p))
     const all = []
     const errs = {}
@@ -50,8 +58,6 @@ function Main() {
       if (r.status === 'fulfilled') all.push(...r.value)
       else errs[jobs[i][0]] = r.reason?.message || String(r.reason)
     })
-    // eWeLink devices first, then the network gear they connect through
-    all.sort((a, b) => (a.src === b.src ? 0 : a.src === 'eWeLink' ? -1 : 1))
     for (const d of all) d.ap = apLabel(d.bssid, all)
     setDevices(all)
     setErrors(errs)
@@ -82,9 +88,15 @@ function Main() {
     )
   }
 
+  // Smart devices first, then the network gear they connect through
+  const shown = [...devices, ...manual.map(m => ({ ...m, src: 'Manual', home: 'Added by hand', online: null, bssid: '', ap: '', id: m.mac }))]
+    .sort((a, b) => SOURCE_ORDER.indexOf(a.src) - SOURCE_ORDER.indexOf(b.src))
+
   return (
     <Dashboard
-      devices={devices}
+      devices={shown}
+      onAddManual={m => updateManual([...manual.filter(x => x.mac !== m.mac), m])}
+      onRemoveManual={mac => updateManual(manual.filter(x => x.mac !== mac))}
       errors={errors}
       loading={loading}
       loadedAt={loadedAt}

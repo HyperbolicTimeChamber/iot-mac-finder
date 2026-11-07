@@ -67,7 +67,52 @@ function BulkMatcher({ devices }) {
   )
 }
 
-export default function Dashboard({ devices, errors, loading, loadedAt, onRefresh, onSettings }) {
+// Ticks are keyed by MAC; devices that report none fall back to their account id
+const keyOf = d => d.mac || `${d.src}:${d.id}`
+
+// Add a device that has no API (e.g. Philips WiZ bulbs: MAC is in the WiZ app under the light's device info)
+function ManualAdder({ onAdd }) {
+  const [name, setName] = useState('')
+  const [mac, setMac] = useState('')
+  const [model, setModel] = useState('Philips WiZ')
+  const [problem, setProblem] = useState('')
+  function submit(e) {
+    e.preventDefault()
+    const m = norm(mac)
+    if (!name.trim()) return setProblem('Give the device a name.')
+    if (m.length !== 12) return setProblem('A MAC address has 12 hex digits, e.g. A8:BB:50:12:34:56.')
+    onAdd({ name: name.trim(), mac: m, model: model.trim() || 'Added by hand' })
+    setName('')
+    setMac('')
+    setProblem('')
+  }
+  return (
+    <details>
+      <summary>Add a device by hand</summary>
+      <p className="hint">For devices with no account to sign in to, such as Philips WiZ bulbs. In the WiZ app, open the light, then Settings → Device info to see its MAC.</p>
+      <form className="manual" onSubmit={submit}>
+        <div className="field">
+          <label className="lbl" htmlFor="manualName">Name</label>
+          <input id="manualName" value={name} onChange={e => setName(e.target.value)} placeholder="Living room lamp" />
+        </div>
+        <div className="field">
+          <label className="lbl" htmlFor="manualMac">MAC address</label>
+          <input id="manualMac" className="mono" value={mac} onChange={e => setMac(e.target.value)} placeholder="A8:BB:50:12:34:56" spellCheck="false" autoCapitalize="characters" />
+        </div>
+        <div className="field">
+          <label className="lbl" htmlFor="manualModel">Type</label>
+          <input id="manualModel" value={model} onChange={e => setModel(e.target.value)} />
+        </div>
+        <div className="manual-actions">
+          <button type="submit" className="btn primary">Add device</button>
+          {problem && <span className="reauth-msg error" role="alert">{problem}</span>}
+        </div>
+      </form>
+    </details>
+  )
+}
+
+export default function Dashboard({ devices, errors, loading, loadedAt, onRefresh, onSettings, onAddManual, onRemoveManual }) {
   const [q, setQ] = useState('')
   const [src, setSrc] = useState('all')
   const [hideDone, setHideDone] = useState(false)
@@ -85,11 +130,12 @@ export default function Dashboard({ devices, errors, loading, loadedAt, onRefres
   const text = raw.toLowerCase()
   const rows = devices.filter(d => {
     if (src !== 'all' && d.src !== src) return false
-    if (hideDone && done.has(d.mac)) return false
+    if (hideDone && done.has(keyOf(d))) return false
     if (!raw) return true
     return (hex.length >= 2 && d.mac.includes(hex)) || d.name.toLowerCase().includes(text) || d.model.toLowerCase().includes(text)
   })
-  const finished = devices.filter(d => done.has(d.mac)).length
+  const finished = devices.filter(d => done.has(keyOf(d))).length
+  const sources = ['all', ...new Set(devices.map(d => d.src))]
   const exact = hex.length === 12 ? devices.find(d => d.mac === hex) : null
 
   return (
@@ -124,7 +170,7 @@ export default function Dashboard({ devices, errors, loading, loadedAt, onRefres
       <BulkMatcher devices={devices} />
 
       <div className="filters" role="group" aria-label="Filter devices">
-        {['all', 'eWeLink', 'TP-Link'].map(s => (
+        {sources.map(s => (
           <button key={s} type="button" className="chip" aria-pressed={src === s} onClick={() => setSrc(s)}>{s === 'all' ? 'All' : s}</button>
         ))}
         <button type="button" className="chip" aria-pressed={hideDone} onClick={() => setHideDone(!hideDone)}>Hide finished</button>
@@ -160,10 +206,12 @@ export default function Dashboard({ devices, errors, loading, loadedAt, onRefres
         {!loading && !devices.length && <div className="empty">No devices loaded. Check the errors above or your details in Settings.</div>}
         {devices.length > 0 && !rows.length && <div className="empty">No device in your accounts matches “{raw}”.</div>}
         {rows.map(d => (
-          <div key={d.src + d.id} className={`row${done.has(d.mac) ? ' done' : ''}`}>
-            <input type="checkbox" className="tick" id={`tick-${d.mac}`} checked={done.has(d.mac)} onChange={e => toggle(d.mac, e.target.checked)} aria-label={`Mark ${d.name} finished`} />
-            <label className="name" htmlFor={`tick-${d.mac}`}>{d.name || '(no name)'}</label>
-            <div className={`state ${d.online ? 'on' : 'off'}`}>{d.online ? 'Online' : 'Offline'}</div>
+          <div key={d.src + d.id} className={`row${done.has(keyOf(d)) ? ' done' : ''}`}>
+            <input type="checkbox" className="tick" id={`tick-${keyOf(d)}`} checked={done.has(keyOf(d))} onChange={e => toggle(keyOf(d), e.target.checked)} aria-label={`Mark ${d.name} finished`} />
+            <label className="name" htmlFor={`tick-${keyOf(d)}`}>{d.name || '(no name)'}</label>
+            {d.src === 'Manual'
+              ? <button type="button" className="copy" onClick={() => onRemoveManual(d.mac)} aria-label={`Remove ${d.name}`}>Remove</button>
+              : <div className={`state ${d.online ? 'on' : 'off'}`}>{d.online ? 'Online' : 'Offline'}</div>}
             <div className="meta">
               {d.mac ? <span className="mono mac"><MarkedMac mac={d.mac} q={hex.length >= 2 ? hex : ''} /></span> : <span>No MAC reported</span>}
               {d.mac && <CopyButton text={fmt(d.mac)} label={`Copy MAC for ${d.name}`} />}
@@ -174,6 +222,8 @@ export default function Dashboard({ devices, errors, loading, loadedAt, onRefres
           </div>
         ))}
       </div>
+
+      <ManualAdder onAdd={onAddManual} />
 
       <footer>
         {loadedAt && <>Loaded live from your accounts at {loadedAt.toLocaleTimeString()}. </>}

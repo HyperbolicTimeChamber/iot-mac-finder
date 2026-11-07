@@ -18,8 +18,12 @@ export function extractMacs(text) {
 const ESPRESSIF = ['70039F', 'C44F33', '7C87CE', 'A4F00F', 'D4E9F4', 'B8D61A', 'E0E2E6', '083AF2', '2043A8', '249494']
 const TPLINK = ['28EE52', 'D84489', '1027F5', '14EBB6', '3C7895', '40ED00']
 
+// Prefixes commonly reported for WiZ (Philips Wi-Fi) bulbs; treated as a hint, not proof
+const WIZ = ['A8BB50', '6C2990', '444F8E', 'D8A011']
+
 export function guess(mac) {
   const oui = mac.slice(0, 6)
+  if (WIZ.includes(oui)) return 'Likely a Philips WiZ Wi-Fi bulb. Add it under "Add a device by hand" once you know which one.'
   if (ESPRESSIF.includes(oui)) return 'Espressif chip, used in Sonoff and most Wi-Fi smart switches. Likely a smart device that isn\'t on your eWeLink account.'
   if (TPLINK.includes(oui)) return 'TP-Link hardware. Possibly a router, extender or Tapo device not bound to your TP-Link ID.'
   if (/^.[26AE]/.test(mac)) return 'Private (randomized) address. Usually a phone, tablet or laptop, not a smart device.'

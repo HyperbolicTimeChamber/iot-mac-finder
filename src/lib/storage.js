@@ -8,6 +8,9 @@ export const DEFAULT_SETTINGS = {
   tplinkPassword: '',
   ewelinkAccount: '',
   sameEmail: true,
+  goveeEmail: '',
+  goveePassword: '',
+  goveeSameEmail: true,
   ewelinkPassword: '',
   ewelinkCountryCode: '+91',
   ewelinkRegion: 'as',
@@ -44,6 +47,23 @@ export function clearSettings() {
   try {
     localStorage.removeItem(SETTINGS)
     sessionStorage.removeItem(SETTINGS)
+  } catch {}
+}
+
+// Devices added by hand (e.g. Philips WiZ bulbs, which have no API)
+const MANUAL = 'mac-finder-manual'
+
+export function loadManual() {
+  try {
+    return JSON.parse(localStorage.getItem(MANUAL) || '[]')
+  } catch {
+    return []
+  }
+}
+
+export function saveManual(list) {
+  try {
+    localStorage.setItem(MANUAL, JSON.stringify(list))
   } catch {}
 }
 

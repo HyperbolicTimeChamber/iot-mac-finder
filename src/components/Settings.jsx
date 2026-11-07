@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { DEFAULT_SETTINGS } from '../lib/storage.js'
-import { ewelinkAccount, hasEwelink, hasTplink, signInEwelink, signInTplink } from '../api/accounts.js'
+import { ewelinkAccount, hasEwelink, hasGovee, hasTplink, signInEwelink, signInGovee, signInTplink } from '../api/accounts.js'
 
 const REGIONS = [
   ['as', 'Asia (as)'],
@@ -73,8 +73,10 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
 
   function submit(e) {
     e.preventDefault()
-    if (s.sameEmail && s.ewelinkPassword && !s.tplinkEmail) return setProblem('Enter your email under TP-Link ID, or untick "Same email".')
-    if (!hasTplink(s) && !hasEwelink(s)) return setProblem('Fill in at least one account: TP-Link or eWeLink.')
+    if (((s.sameEmail && s.ewelinkPassword) || (s.goveeSameEmail && s.goveePassword)) && !s.tplinkEmail) {
+      return setProblem('Enter your email under TP-Link ID, or untick "Same email".')
+    }
+    if (!hasTplink(s) && !hasEwelink(s) && !hasGovee(s)) return setProblem('Fill in at least one account: TP-Link, eWeLink or Govee.')
     if (hasEwelink(s) && !s.relayUrl) return setProblem('eWeLink needs the relay URL. Find it under Advanced.')
     if (Boolean(s.ewelinkAppId) !== Boolean(s.ewelinkAppSecret)) {
       return setProblem('Fill in both App ID and App Secret under Advanced, or leave both empty.')
@@ -87,7 +89,7 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
     <div className="wrap">
       <header>
         <h1>Home MAC Finder</h1>
-        <p>Connect your accounts. Everything you enter stays in this browser and is sent only to TP-Link and eWeLink.</p>
+        <p>Connect your accounts. Fill in only the ones you use. Everything you enter stays in this browser and is sent only to that service.</p>
       </header>
 
       <form className="settings" onSubmit={submit} autoComplete="on">
@@ -114,6 +116,23 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
             : <Field id="ewelinkAccount" label="Email or phone" value={s.ewelinkAccount} onChange={set('ewelinkAccount')} hint="Phone numbers include the country code, e.g. +919800000000." />}
           <PasswordField id="ewelinkPassword" label="Password" autoComplete="off" value={s.ewelinkPassword} onChange={set('ewelinkPassword')} />
           <Reauth label="eWeLink" ready={hasEwelink(s) && Boolean(s.relayUrl)} missing="Enter email and password to test." run={() => signInEwelink(s)} />
+        </fieldset>
+
+        <fieldset>
+          <legend>Govee</legend>
+          <p className="hint">Lists your Govee lights and plugs with their Wi-Fi MAC addresses. Uses the Govee app's sign-in.</p>
+          <label className="check">
+            <input id="goveeSameEmail" type="checkbox" checked={s.goveeSameEmail} onChange={set('goveeSameEmail')} />
+            <span>Same email as my TP-Link ID</span>
+          </label>
+          {s.goveeSameEmail
+            ? <div className="field">
+                <span className="lbl">Email</span>
+                <div className="linked mono">{s.tplinkEmail || 'Enter your email in TP-Link ID above'}</div>
+              </div>
+            : <Field id="goveeEmail" label="Email" type="email" value={s.goveeEmail} onChange={set('goveeEmail')} />}
+          <PasswordField id="goveePassword" label="Password" autoComplete="off" value={s.goveePassword} onChange={set('goveePassword')} />
+          <Reauth label="Govee" ready={hasGovee(s)} missing="Enter email and password to test." run={() => signInGovee(s)} />
         </fieldset>
 
         <details className="advanced">

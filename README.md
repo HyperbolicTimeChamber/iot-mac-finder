@@ -1,8 +1,9 @@
 # Home MAC Finder
 
 Search a MAC address and see which smart device it belongs to. Pulls devices live from your
-**TP-Link ID** (routers, extenders, Tapo) and **eWeLink** (Sonoff) accounts, and matches pasted
-client lists from Tether or the router admin page.
+**TP-Link ID** (routers, extenders, Tapo), **eWeLink** (Sonoff) and **Govee** accounts, and matches
+pasted client lists from Tether or the router admin page. Devices with no API, such as Philips WiZ
+bulbs, can be added by hand.
 
 Live site: https://hyperbolictimechamber.github.io/iot-mac-finder/
 
@@ -11,7 +12,8 @@ Live site: https://hyperbolictimechamber.github.io/iot-mac-finder/
 - Static React app (Vite), deployed to GitHub Pages by `.github/workflows/deploy.yml` on every push to `main`.
 - You enter account details in the Settings form. They stay in your browser (session storage, or
   local storage if you tick "Remember") and are sent only to TP-Link and eWeLink. Nothing is in this repo.
-- **TP-Link cloud** allows browser requests, so the app calls it directly.
+- **TP-Link cloud** and **Govee** allow browser requests, so the app calls them directly. Govee uses
+  the Govee app's own (unofficial) sign-in, which returns each device's Wi-Fi MAC.
 - **eWeLink** blocks browser requests (no CORS headers), so its calls go through a small Cloudflare
   Worker in `worker/` that forwards to eWeLink's API hosts only and stores nothing.
 - "Finished" ticks are saved in your browser's local storage.
