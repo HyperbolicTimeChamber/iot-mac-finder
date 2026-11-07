@@ -52,9 +52,14 @@ export async function fetchEwelink(cfg) {
     return json.data.at
   }
 
-  const token = await login()
-  const authed = async (path, opts) => {
+  let token = await login()
+  const authed = async (path, opts, retried = false) => {
     const json = await request(path, { ...opts, headers: { Authorization: `Bearer ${token}` } })
+    // A newer sign-in elsewhere (another tab, the MCP) ends this session: sign in again once
+    if ((json.error === 401 || json.error === 406) && !retried) {
+      token = await login()
+      return authed(path, opts, true)
+    }
     if (json.error !== 0) throw new Error(`eWeLink ${path} failed: ${json.msg || ''} [${json.error}]`)
     return json.data
   }
