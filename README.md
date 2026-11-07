@@ -4,7 +4,7 @@ Search a MAC address and see which smart device it belongs to. Pulls devices liv
 **TP-Link ID** (routers, extenders, Tapo) and **eWeLink** (Sonoff) accounts, and matches pasted
 client lists from Tether or the router admin page.
 
-Live site: https://hyperbolictimechamber.github.io/mac-finder/
+Live site: https://hyperbolictimechamber.github.io/iot-mac-finder/
 
 ## How it works
 
@@ -42,5 +42,5 @@ Rename clients in the Tether app (Clients → device → edit name).
 
 ```sh
 npm install
-npm run dev   # http://localhost:5173/mac-finder/
+npm run dev   # http://localhost:5173/iot-mac-finder/
 ```
