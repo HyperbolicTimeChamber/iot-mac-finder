@@ -85,6 +85,14 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
     onSave({ ...s, ewelinkAccount: ewelinkAccount(s), tplinkEmail: s.tplinkEmail.trim(), relayUrl: s.relayUrl.trim() })
   }
 
+  // Enter in a field tests that account's sign-in instead of submitting the
+  // form; only the "Open dashboard" button leaves Settings.
+  function onKeyDown(e) {
+    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || e.nativeEvent.isComposing) return
+    e.preventDefault()
+    e.target.closest('fieldset')?.querySelector('.reauth button:not(:disabled)')?.click()
+  }
+
   return (
     <div className="wrap">
       <header>
@@ -92,7 +100,7 @@ export default function Settings({ initial, onSave, onCancel, onForget }) {
         <p>Connect your accounts. Fill in only the ones you use. Everything you enter stays in this browser and is sent only to that service.</p>
       </header>
 
-      <form className="settings" onSubmit={submit} autoComplete="on">
+      <form className="settings" onSubmit={submit} onKeyDown={onKeyDown} autoComplete="on">
         <fieldset>
           <legend>TP-Link ID</legend>
           <p className="hint">The account you use in Tether. Lists your routers, extenders and Tapo devices.</p>
